@@ -1,0 +1,128 @@
+
+	ORG	LAST_ROM
+
+enjoy_str:
+	dc.b	"ENJOY", 0
+ng_str:
+	dc.b	"NG", 0
+ok_str:
+	dc.b	"OK", 0
+
+label_wram_aaaa_str:
+	dc.b	"$0F0000 WRAM $AAAA: ", 0
+	.align	2
+
+label_wram_5555_str:
+	dc.b	"$0F0000 WRAM $5555: ", 0
+	.align	2
+
+wram_size_ok_str:
+	dc.b	"WRAM A1 - A16 LINES ", 0
+	.align	2
+
+wram_a15_bad_str:
+	dc.b	"WRAM A15 LINE ", 0
+wram_a14_bad_str:
+	dc.b	"WRAM A14 LINE ", 0
+wram_a13_bad_str:
+	dc.b	"WRAM A13 LINE ", 0
+wram_a12_bad_str:
+	dc.b	"WRAM A12 LINE ", 0
+wram_a11_bad_str:
+	dc.b	"WRAM A11 LINE ", 0
+wram_a10_bad_str:
+	dc.b	"WRAM A10 LINE ", 0
+wram_a9_bad_str:
+	dc.b	"WRAM A9 LINE ", 0
+wram_a8_bad_str:
+	dc.b	"WRAM A8 LINE ", 0
+wram_a7_bad_str:
+	dc.b	"WRAM A7 LINE ", 0
+wram_a6_bad_str:
+	dc.b	"WRAM A6 LINE ", 0
+wram_a5_bad_str:
+	dc.b	"WRAM A5 LINE ", 0
+wram_a4_bad_str:
+	dc.b	"WRAM A4 LINE ", 0
+wram_a3_bad_str:
+	dc.b	"WRAM A3 LINE ", 0
+wram_a2_bad_str:
+	dc.b	"WRAM A2 LINE ", 0
+wram_a1_bad_str:
+	dc.b	"WRAM A1 LINE ", 0
+
+wram_addr_line_str_tbl:
+	dc.l	wram_a1_bad_str
+	dc.l	wram_a2_bad_str
+	dc.l	wram_a3_bad_str
+	dc.l	wram_a4_bad_str
+	dc.l	wram_a5_bad_str
+	dc.l	wram_a6_bad_str
+	dc.l	wram_a7_bad_str
+	dc.l	wram_a8_bad_str
+	dc.l	wram_a9_bad_str
+	dc.l	wram_a10_bad_str
+	dc.l	wram_a11_bad_str
+	dc.l	wram_a12_bad_str
+	dc.l	wram_a13_bad_str
+	dc.l	wram_a14_bad_str
+	dc.l	wram_a15_bad_str
+
+scl_ram_5555_str:
+	dc.b	"$090000 SCL_RAM $5555: ", 0
+
+scl_ram_aaaa_str:
+	dc.b	"$090000 SCL_RAM $AAAA: ", 0
+
+sc_cram_5555_str:
+	dc.b	"$088000 SC_CRAM $5555: ", 0
+
+sc_cram_aaaa_str:
+	dc.b	"$088000 SC_CRAM $AAAA: ", 0
+
+vr_cram_5555_str:
+	dc.b	"$086000 VR_CRAM $5555: ", 0
+
+vr_cram_aaaa_str:
+	dc.b	"$086000 VR_CRAM $AAAA: ", 0
+
+vram_str:
+	dc.b	"TEXT VRAM", 0
+
+initializing_nmk004_str:
+	dc.b	"INITIALIZING NMK004", 0
+
+status_8x_str:
+	dc.b	"STATUS $8x WAIT", 0
+
+new_status_write_str:
+	dc.b	"STATUS WRITE", 0
+
+magic_c7_wait_str:
+	dc.b	"MAGIC REPLY $C7 WAIT", 0
+
+magic_00_wait_str:
+	dc.b	"MAGIC REPLY $00 WAIT", 0
+
+handshake_ok_str:
+	dc.b	"HANDSHAKE OK.", 0
+
+handshake_status_str:
+	dc.b	"HANDSHAKE STATUS ", 0
+
+send_str:
+	dc.b	"CMD SEND $", 0
+
+want_str:
+	dc.b	"REPLY WANT $", 0
+
+got_str:
+	dc.b	" GOT $", 0
+
+received_str:
+	dc.b	"RECEIVED $", 0
+	
+
+	.align	2
+
+LAST_ROM	:=	*

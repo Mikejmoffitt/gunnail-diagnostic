@@ -1,0 +1,242 @@
+	CPU		68000
+	PADDING		OFF
+	ORG		$000000
+	BINCLUDE	"prg.orig"
+
+ROM_FREE = $02A100
+LAST_ROM	:=	ROM_FREE
+
+	INCLUDE		"src/memory_map.inc"
+	INCLUDE		"src/vars.inc"
+	INCLUDE		"src/func.inc"
+	INCLUDE		"src/strings.a68"
+	INCLUDE		"src/skip_checksum.a68"
+	INCLUDE		"src/util.a68"
+	INCLUDE		"src/memtest.a68"
+	INCLUDE		"src/pretty_int_handler.a68"
+	INCLUDE		"src/nmk004_init.a68"
+
+; Install new reset vector.
+	ORG	$000004
+	dc.l	new_reset_vector
+
+; Skip sound CPU init.
+	ORG	$13F7C
+;	rts
+
+	ORG	LAST_ROM
+
+new_reset_vector:
+	ori	#$2000, sr
+
+; Print message in top corner before doing anything.
+	clr.w	d0
+	lea	enjoy_str, a0
+	lea	(.clear_mem_start).l, a1
+	lea	V_RAM + $9C0, a2
+	jmp	print_str_no_wram
+
+.clear_mem_start:
+; Clear all memory
+	lea	(WRAM).l, a0
+	lea	(.post_wram_clear).l, a1
+	move.w	#$1000, d0
+	clr.l	d1
+	jmp	mem_clear
+.post_wram_clear:
+
+	lea	(SC_CRAM).l, a0
+	lea	(.post_cram_clear).l, a1
+	move.w	#$0080, d0
+	clr.l	d1
+	jmp	mem_clear
+.post_cram_clear:
+
+	lea	(SCL_PNT).l, a0
+	lea	(.post_scl_pnt_clear).l, a1
+	move.w	#$0040, d0
+	clr.l	d1
+	jmp	mem_clear
+.post_scl_pnt_clear:
+
+	lea	(SCL_RAM).l, a0
+	lea	(.post_scl_ram_clear).l, a1
+	move.w	#$0800, d0
+	clr.l	d1
+	jmp	mem_clear
+.post_scl_ram_clear:
+
+	lea	(V_RAM).l, a0
+	lea	(.post_v_ram_clear).l, a1
+	move.w	#$0400, d0
+	move.w	#$0020, d1
+	jmp	mem_clear
+.post_v_ram_clear:
+
+	; Write text palette
+	lea	SC_CRAM + $400, a0
+	lea	text_palettes, a1
+	move.w	#$002F, d1
+.pal_top:
+	move.w	(a1)+, (a0)+
+	dbf	d1, .pal_top
+
+; Test WRAM with $AAAA value
+	lea	(WRAM).l, a0
+	lea	(.after_memtest_wram_aaaa).l, a1
+	lea	(label_wram_aaaa_str).l, a2
+	lea	V_RAM + $986, a3
+	lea	(WRAM + $10000).l, a4
+	move.w	#$AAAA, d0
+	jmp	memtest_region_no_wram
+.after_memtest_wram_aaaa:
+	bne	.test_wram_5555
+.sit_forever:
+	bra	.sit_forever
+
+.test_wram_5555:
+
+; Test WRAM with $5555 value
+	lea	(WRAM).l, a0
+	lea	(.after_memtest_wram_5555).l, a1
+	lea	(label_wram_5555_str).l, a2
+	lea	V_RAM + $946, a3
+	lea	(WRAM + $10000).l, a4
+	move.w	#$5555, d0
+	jmp	memtest_region_no_wram
+.after_memtest_wram_5555:
+	bne	.clear_wram_again
+	bra	.sit_forever
+
+.clear_wram_again:
+	lea	(WRAM).l, a0
+	lea	(.test_wram_size).l, a1
+	move.w	#$1000, d0
+	clr.l	d1
+	jmp	mem_clear
+
+; Validate RAM size (missing / stuck address lines, etc)
+.test_wram_size:
+	; d0 used to hold uniqe value to read/write from RAM
+	clr.l	d1
+	move.w	#$0002, d1  ; Offset for address line A1
+	move.w	#$0000, d2  ; Address line, starting at A1
+	lea	(WRAM).l, a0
+
+.size_test_top:
+	; A1 holds WRAM address with single address bit set
+	move.l	a0, a1
+	add.l	d1, a1
+
+	; Write unique value to WRAM base
+	move.w	d1, d0
+	eori.w	#$AAAA, d0
+	move.w	d0, (a0)
+
+	; Write another unique value to offset WRAM
+	eori.w	#$FFFF, d0
+	move.w	d0, (a1)
+
+	; Check that offset write didn't affect WRAM base
+	move.w	(a0), d3
+	cmp.w	d0, d3
+	bne	.next_line
+
+	; The line caused the address to alias; print error.
+	lea	wram_addr_line_str_tbl, a0  ; String table
+	move.l	(a0, d2), a0  ; String for index d4
+	lea	(.after_addr_print).l, a1
+	lea	V_RAM + $906, a2
+	clr.w	d0
+	jmp	print_str_no_wram
+.after_addr_print:
+
+	lea	ng_str, a0  ; String table
+	lea	(.sit_forever).l, a1
+	move.w	#$1000, d0
+	jmp	print_str_no_wram
+	
+
+.next_line:
+	lsl.w	#1, d1  ; Move to next address line
+	addi.w	#1, d2  ; Increment test index for sake of error printing
+	cmp.w	#$0F, d2
+	bne	.size_test_top
+
+; Print OK message and continue.
+
+; At this point, we have full confidence in WRAM, and the stack. Tests may
+; continue assuming that these work.
+	move.l	#(V_RAM + $906), (PrintVramAddr).l
+
+	lea	wram_size_ok_str, a0
+	move.l	PrintVramAddr, a1
+	move.w	#$0000, d0
+	jsr	print_str
+
+	lea	ok_str, a0
+	move.w	#$2000, d0
+	jsr	print_str
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+; Test SCL RAM
+	lea	(SCL_RAM).l, a0
+	lea	(SCL_RAM + $4000).l, a1
+	lea	scl_ram_5555_str, a2
+	move.w	#$5555, d0
+	jsr	memtest_region
+	lea	(SCL_RAM).l, a0
+	lea	(SCL_RAM + $4000).l, a1
+	lea	scl_ram_aaaa_str, a2
+	move.w	#$AAAA, d0
+	jsr	memtest_region
+
+; Test SC_CRAM
+	lea	(SC_CRAM).l, a0
+	lea	(SC_CRAM + $0400).l, a1
+	lea	sc_cram_5555_str, a2
+	move.w	#$5555, d0
+	jsr	memtest_region
+	lea	(SC_CRAM).l, a0
+	lea	(SC_CRAM + $0400).l, a1
+	lea	sc_cram_aaaa_str, a2
+	move.w	#$AAAA, d0
+	jsr	memtest_region
+
+; Test VR_CRAM
+	lea	(VR_CRAM).l, a0
+	lea	(VR_CRAM + $0200).l, a1
+	lea	vr_cram_5555_str, a2
+	move.w	#$5555, d0
+	jsr	memtest_region
+	lea	(VR_CRAM).l, a0
+	lea	(VR_CRAM + $0200).l, a1
+	lea	vr_cram_aaaa_str, a2
+	move.w	#$AAAA, d0
+	jsr	memtest_region
+
+	jsr	nmk004_init
+
+	jmp	original_entry
+
+text_palettes:
+	; White
+	dc.w	$0000, $FFFF, $FFFF, $FFFF
+	dc.w	$FFFF, $FFFF, $FFFF, $FFFF
+	dc.w	$FFFF, $FFFF, $FFFF, $FFFF
+	dc.w	$FFFF, $FFFF, $FFFF, $FFFF
+	; Red
+	dc.w	$0000, $F000, $F000, $F000
+	dc.w	$F000, $F000, $F000, $F000
+	dc.w	$F000, $F000, $F000, $F000
+	dc.w	$F000, $F000, $F000, $F000
+	; Green
+	dc.w	$0000, $0F00, $0F00, $0F00
+	dc.w	$0F00, $0F00, $0F00, $0F00
+	dc.w	$0F00, $0F00, $0F00, $0F00
+	dc.w	$0F00, $0F00, $0F00, $0F00
+
+
+LAST_ROM	:=	*

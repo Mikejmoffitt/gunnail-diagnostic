@@ -1,0 +1,319 @@
+; Routines to initialize NMK004 with verbosity
+
+	ORG	LAST_ROM
+
+nmk004_wait:
+	move.w	#$700, d0
+-
+	nop
+	dbf	d0, -
+	rts
+
+; Checks against expected handshake return in d0.b
+nmk004_handshake:
+	move.w	d0, -(sp)
+	lea	(status_8x_str).l, a0
+	clr.w	d0
+	jsr	print_line
+
+.status_wait:
+	move.b	(NMK004_R).l, d0
+	move.w	d0, d1
+	andi.b	#$E0, d1
+	cmpi.b	#$80, d1
+	bne	.status_wait
+
+	; Return status (status? sound program ID?)
+	andi.b	#$1F, d0
+	move.w	d0, -(sp)
+	ori.b	#$20, d0
+
+	move.w	d0, -(sp)
+	lea	(new_status_write_str).l, a0
+	clr.w	d0
+	jsr	print_line
+	move.w	(sp)+, d0
+
+	move.b	d0, (NMK004_W).l
+
+	move.w	d0, -(sp)
+	lea	(magic_c7_wait_str).l, a0
+	clr.w	d0
+	jsr	print_line
+	move.w	(sp)+, d0
+
+.ack_c7_wait:
+	move.b	(NMK004_R).l, d1
+	cmpi.b	#$C7, d1
+	bne	.ack_c7_wait
+
+	ori.b	#$60, d0
+
+	move.w	d0, -(sp)
+	lea	(new_status_write_str).l, a0
+	clr.w	d0
+	jsr	print_line
+	move.w	(sp)+, d0
+
+	move.b	d0, (NMK004_W).l
+
+	move.w	d0, -(sp)
+	lea	(magic_00_wait_str).l, a0
+	clr.w	d0
+	jsr	print_line
+	move.w	(sp)+, d0
+
+.ack_00_wait:
+	move.b	(NMK004_R).l, d0
+	bne	.ack_00_wait
+
+	clr.w	d0
+	move.b	d0, (NMK004_W).l
+
+	; Check returned sound program status from handshake.
+	lea	(handshake_status_str).l, a0
+	move.l	PrintVramAddr, a1  ; VRAM address
+	clr.w	d0
+	jsr	print_str
+
+	move.w	(sp)+, d0  ; status
+	move.w	(sp)+, d1  ; expected
+	cmp.b	d1, d0
+	beq	.sound_id_ok
+	move.w	#$1000, d1  ; red
+	bra	.print_sound_ver
+
+.sound_id_ok:
+	move.w	#$2000, d1  ; green
+
+.print_sound_ver:
+	move.w	#2, d2
+	jsr	print_hex_d0
+
+	; Next line
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+	rts
+
+; 2a64a
+nmk004_send_command:
+	move.w	d0, d7  ; Store original
+	ori.b	#$80, d0  ; Mask command
+
+; -------------------------------------------
+	move.w	d0, -(sp)
+	lea	(send_str).l, a0
+	move.l	PrintVramAddr, a1  ; VRAM address
+	clr.w	d0
+	jsr	print_str
+	move.w	(sp)+, d0
+
+	clr.w	d1
+	move.w	#2, d2
+	jsr	print_hex_d0
+; -------------------------------------------
+
+.cmd_send_0:
+	move.b	d0, (NMK004_W).l  ; Send masked command
+	move.w	d7, d0  ; Restore original
+	ori.b	#$20, d0  ; Set expected ack bit
+
+; -------------------------------------------
+
+	; Next line
+	move.w	d0, -(sp)
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+	lea	(want_str).l, a0
+	move.l	PrintVramAddr, a1  ; VRAM address
+	clr.w	d0
+	jsr	print_str
+	move.w	(sp)+, d0
+
+	clr.w	d1
+	move.w	#2, d2
+	jsr	print_hex_d0
+
+	move.w	d0, -(sp)
+	lea	(got_str).l, a0
+	clr.w	d0
+	jsr	print_str
+	move.w	(sp)+, d0
+
+	; Store the final print address as we will return to it
+	move.l	a1, -(sp)
+; -------------------------------------------
+
+; The read number is re-printed as it is read
+.cmd_ack_wait_0:
+	move.l	(sp), a1
+
+	move.b	(NMK004_R).l, d1
+	move.w	d1, -(sp)  ; Store reply
+
+; -------------------------------------------
+	move.w	d0, -(sp)  ; Store wanted reply
+	cmp.b	d0, d1
+	bne	.wrong_reply_0
+	move.w	d1, d0
+	move.w	#$2000, d1  ; green
+	bra	.print_reply_0
+.wrong_reply_0:
+	move.w	d1, d0
+	move.w	#$1000, d1  ; red
+.print_reply_0:
+	move.w	#2, d2
+	jsr	print_hex_d0
+	move.w	(sp)+, d0  ; Restore wanted reply
+; -------------------------------------------
+
+	move.w	(sp)+, d1  ; Restore reply
+	cmp.b	d0, d1
+	bne	.cmd_ack_wait_0
+
+	move.l	(sp)+, a1  ; Pop print address stored for reply rewrite
+
+	; At this point, the command went through and was ACKed, and
+	; both d0 and d1 contain the reply.
+
+	move.b	d0, d7  ; Store previous reply
+
+	; Next line
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+	; Send magic $C7 status next
+	move.w	#$C7, d0
+
+; -------------------------------------------
+	move.w	d0, -(sp)
+	lea	(send_str).l, a0
+	move.l	PrintVramAddr, a1  ; VRAM address
+	clr.w	d0
+	jsr	print_str
+	move.w	(sp)+, d0
+
+	; d0 contains $C7 from magic write above
+	clr.w	d1
+	move.w	#2, d2
+	jsr	print_hex_d0
+; -------------------------------------------
+
+.cmd_send_1:
+	move.b	d0, (NMK004_W).l  ; Send magic command
+	move.w	d7, d0  ; Restore original reply
+	ori.b	#$40, d0  ; Set expected ack bit
+
+; -------------------------------------------
+
+	; Next line
+	move.w	d0, -(sp)
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+	lea	(want_str).l, a0
+	move.l	PrintVramAddr, a1  ; VRAM address
+	clr.w	d0
+	jsr	print_str
+	move.w	(sp)+, d0
+
+	clr.w	d1
+	move.w	#2, d2
+	jsr	print_hex_d0
+
+	move.w	d0, -(sp)
+	lea	(got_str).l, a0
+	clr.w	d0
+	jsr	print_str
+	move.w	(sp)+, d0
+
+	; Store the final print address as we will return to it
+	move.l	a1, -(sp)
+; -------------------------------------------
+
+; The read number is re-printed as it is read
+.cmd_ack_wait_1:
+	move.l	(sp), a1
+
+	move.b	(NMK004_R).l, d1
+	move.w	d1, -(sp)  ; Store reply
+
+; -------------------------------------------
+	move.w	d0, -(sp)  ; Store wanted reply
+	cmp.b	d0, d1
+	bne	.wrong_reply_1
+	move.w	d1, d0
+	move.w	#$2000, d1  ; green
+	bra	.print_reply_1
+.wrong_reply_1:
+	move.w	d1, d0
+	move.w	#$1000, d1  ; red
+.print_reply_1:
+	move.w	#2, d2
+	jsr	print_hex_d0
+	move.w	(sp)+, d0  ; Restore wanted reply
+; -------------------------------------------
+
+	move.w	(sp)+, d1  ; Restore reply
+	cmp.b	d0, d1
+	bne	.cmd_ack_wait_0
+
+	move.l	(sp)+, a1
+
+	; Write 0 to sound latch
+	clr.b	(NMK004_W).l
+
+	; Next line
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+	; TODO: Rest of it
+
+	rts
+
+nmk004_init:
+	lea	initializing_nmk004_str, a0
+	move.w	#0, d0
+	jsr	print_line
+
+	move.w	#$700, d0
+-	dbf	d0, -
+
+	clr.b	(NMK004_W).l
+	move.b	#$02, d0
+	bsr	nmk004_handshake
+
+	move.b	#$0C, d0
+	bsr	nmk004_send_command
+
+	move.w	#$70, d0
+-	dbf	d0, -
+
+	move.b	#$1F, d0
+	bsr	nmk004_handshake
+
+	move.w	#$342, d0
+-	dbf	d0, -
+
+	move.b	#$09, d0
+	bsr	nmk004_send_command
+
+	move.w	#$69A, d0
+-	dbf	d0, -
+
+	move.b	#$0B, d0
+	bsr	nmk004_handshake
+
+	move.w	#$AEC, d0
+-	dbf	d0, -
+
+	rts
+
+LAST_ROM	:=	*

@@ -1,0 +1,122 @@
+; VRAM test routines. Activated by holding P2 A+B in place of the original
+; extended test routine.
+
+; VRAM test
+	ORG	$0065CA
+	jmp	vram_test
+
+
+	ORG	LAST_ROM
+
+vram_test_string:
+	dc.w	$0803 ; Palette (upper 4 bits) + per-char delay (lower 12)
+	dc.l	V_RAM + $1986 ; Target address.
+	dc.w	"VRAM TEST.", $8020
+	align	2
+
+vram_test_base_string:
+	dc.w	$0801 ; Palette (upper 4 bits) + per-char delay (lower 12)
+	dc.l	V_RAM + $1786 ; Target address.
+	dc.w	"$          want $", $8020
+	align	2
+
+vram_test_base_string_2:
+	dc.w	$0801 ; Palette (upper 4 bits) + per-char delay (lower 12)
+	dc.l	V_RAM + $1746 ; Target address.
+	dc.w	"           read $", $8020
+	align	2
+
+; a5 = base address
+; d5 = size
+ram_test:
+	lea	vram_test_string, a6
+	jsr	print_string_a6
+	lea	vram_test_base_string, a6
+	jsr	print_string_a6
+	lea	vram_test_base_string_2, a6
+	jsr	print_string_a6
+
+;	lea	V_RAM + $17A8, a0
+;	move.l	#$1234ABCD, d0 ; test value
+;	move.w	#$5000, d1 ; blue
+;	move.w	#7, d2 ; 3 digits
+;	jsr	print_hex_d0
+
+	; Fill VRAM with offset values.
+	move.l	a5, a1
+	move.w	d5, d7
+	clr.l	d6
+.fill_top:
+	; Update write address
+	lea	V_RAM + $1788, a0
+	move.l	a1, d0
+	move.w	#$0000, d1
+	moveq	#7, d2
+	jsr	print_hex_d0
+
+	; Update write value
+	lea	V_RAM + $17A8, a0
+	move.w	#$0000, d1
+	moveq	#3, d2
+	move.w	d6, d0
+	jsr	print_hex_d0
+
+	; Do the VRAM write
+	move.w	d6, (a1)+
+	addi.w	#1, d6
+
+	dbf	d7, .fill_top
+
+	; Now compare.
+	move.l	a5, a1
+	move.w	d5, d7
+	clr.l	d6
+
+	lea	V_RAM + $1768, a0
+	move.w	#$5000, d1
+	moveq	#3, d2
+.check_top:
+	; Update read address
+	lea	V_RAM + $1788, a0
+	move.l	a1, d0
+	move.w	#$0000, d1
+	moveq	#7, d2
+	jsr	print_hex_d0
+
+	; Update want value
+	lea	V_RAM + $17A8, a0
+	move.w	#$0000, d1
+	moveq	#3, d2
+	move.w	d6, d0
+	jsr	print_hex_d0
+
+	; Update read value
+	lea	V_RAM + $1768, a0
+	move.w	#$0000, d1
+	moveq	#3, d2
+	move.w	(a1)+, d0
+	jsr	print_hex_d0
+
+	cmp.w	d6, d0
+	bne	.forever
+
+	addi.w	#1, d6
+
+	dbf	d7, .check_top
+	rts
+
+.forever:
+	bra	.forever
+
+
+vram_test:
+
+	lea	SCL_PNT, a5
+	move.w	#$3FFF, d5
+	jsr	ram_test
+
+.forever:
+	bra	.forever
+
+
+LAST_ROM	:=	*

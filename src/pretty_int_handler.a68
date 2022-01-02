@@ -1,0 +1,54 @@
+; Put a slightly fancier unhandled interrupt handler in place.
+	ORG	$0072B4
+	jmp	pretty_int_handler
+
+	ORG	LAST_ROM
+
+error_string:
+	dc.w	"error! int=", 0
+	align	2
+
+; Clears VRAM, then follows routine pointer placed in (a1).
+clear_vram:
+	lea	V_RAM, a0
+	move.w	#$7FF, d0
+	move.w	#$0020, d1
+.clear_top:
+	move.w	d1, (a0)+
+	dbf	d0, .clear_top
+	jmp	(a1)
+
+pretty_int_handler:
+	move.w	($9D96E).l, d2
+	lea	.post_clear, a1
+	jmp	clear_vram
+
+.post_clear:
+	; Clear palettes
+	lea	SC_CRAM, a0
+	move.w	#$3FF, d1
+.clr_top:
+	clr.l	(a0)+
+	dbf	d1, .clr_top
+
+	; Write white for our palette
+	lea	SC_CRAM + $402, a0
+	move.w	#$FFFF, d0
+	move.w	#$000E, d1
+.pal_top:
+	move.w	d0, (a0)+
+	dbf	d1, .pal_top
+
+	lea	(V_RAM + $E04).l, a0  ; Pointer directly to screen RAM
+	lea	error_string, a1
+	move.w	#10, d1
+.barf_top:
+	move.w	(a1)+, (a0)+
+	dbf	d1, .barf_top
+	move.w	d2, (a0)+
+	move.b	#$02, (NMK004_W).l
+.done:
+	bra	.done
+
+
+LAST_ROM	:=	*

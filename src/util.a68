@@ -1,0 +1,106 @@
+	ORG	LAST_ROM
+
+; a1.l = dest addr
+; d0 = value
+; d1.w = attr mask
+; d2.w = digits
+print_hex_d0:
+	move.w	d0, -(sp)
+	move.w	d1, -(sp)
+	move.w	d2, -(sp)
+	move.w	d3, -(sp)
+
+	sub.w	#1, d2
+	move.w	d2, d3  ; Number of digits stored in d3
+	; Move forwards in VRAM as this is printed backwards
+	lsl.w	#1, d2
+	lea	2(a1, d2), a1
+
+	move.l	a1, -(sp)
+
+	; Get attr base in d2
+	move.w	d1, d2
+.print_loop:
+	; Place digit value in low byte of d2, with masked nybble
+	move.b	d0, d2
+	andi.w	#$F00F, d2
+	; Print character
+	move.w	d2, -(a1)
+	lsr.l	#4, d0
+	dbf	d3, .print_loop
+
+	move.l	(sp)+, a1
+	move.w	(sp)+, d3
+	move.w	(sp)+, d2
+	move.w	(sp)+, d1
+	move.w	(sp)+, d0
+
+	rts
+
+; a0.l = source str
+; a1.l = return addr
+; a2.l = dest vram
+; d0.w = attr
+print_str_no_wram:
+	move.b	(a0)+, d0
+	beq	.finished
+	move.w	d0, (a2)+
+	bra	print_str_no_wram
+
+.finished:
+	jmp	(a1)
+
+; a0.l = source str
+; a1.l = dest vram
+; d0.w = attr
+print_str:
+	move.b	(a0)+, d0
+	beq	.finished
+	move.w	d0, (a1)+
+	bra	print_str
+
+.finished:
+	rts
+
+; Uses PrintVramAddr and increments after.
+; a0.l = source str
+; d0.w = attr
+print_line:
+	move.l	a1, -(sp)
+	move.l	PrintVramAddr, a1
+	jsr	print_str
+
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+	move.l	(sp)+, a1
+	rts
+
+; a0.l = region pointer
+; a1.l = return pointer
+; d0.w = size in bytes / $10, minus one ($0 = $10; $1000 = $10000)
+; d1.w = clear value
+mem_clear:
+	swap	d0  ; Preserve d0.w in the high halfword
+	move.w	d1, d0
+	swap	d1
+	move.w	d0, d1
+	swap d0
+	; d1.l now contains original d1.w duplicated
+
+	tst.w	d0
+	beq	.finish
+	sub.w	#1, d0
+	
+.clear_top:
+	move.l	d1, (a0)+
+	move.l	d1, (a0)+
+	move.l	d1, (a0)+
+	move.l	d1, (a0)+
+	dbf	d0, .clear_top
+
+.finish:
+	jmp	(a1)
+
+LAST_ROM	:=	*

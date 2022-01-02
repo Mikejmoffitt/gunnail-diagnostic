@@ -1,0 +1,21 @@
+ROM_START   = $000000
+ROM_SIZE    = $080000
+
+IO_PORT     = $080000
+SC_CRAM     = $088000
+OBJ_CRAM    = SC_CRAM + $200
+VR_CRAM     = SC_CRAM + $600
+SCL_PNT     = $08C000
+SCL_RAM     = $090000
+V_RAM       = $09C000
+WRAM        = $0F0000
+
+COININ      = IO_PORT + $00
+LEVER_IN    = IO_PORT + $02
+DIP_SW1     = IO_PORT + $08
+DIP_SW2     = IO_PORT + $0A
+NMK004_R    = IO_PORT + $0F
+F_F_REV     = IO_PORT + $14
+NMK004_NMI  = IO_PORT + $16  ; Bit 0 fires an NMI on the NMK004.
+SCR_BNAK    = IO_PORT + $18
+NMK004_W    = IO_PORT + $1F

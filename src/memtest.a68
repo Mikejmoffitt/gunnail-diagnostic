@@ -1,0 +1,111 @@
+; Routines for generic memory check.
+
+	ORG	LAST_ROM
+
+	.align	2
+
+; a0.l = base test address
+; a1.l = return ptr
+; a2.l = region string
+; a3.l = VRAM print location
+; a4.l = end address (not to be tested)
+; d0.w = test value
+; clobbers d1
+; Z flag set if test is ok (bne after for success case)
+memtest_region_no_wram:
+	; Print label
+	move.w	d0, d1
+	clr.w	d0
+.print_top:
+	move.b	(a2)+, d0
+	beq	.print_finished
+	move.w	d0, (a3)+
+	bra	.print_top
+
+.print_finished:
+.test_top:
+	cmpa.l	a0, a4
+	beq	.test_ok
+
+	move.w	d1, (a0)
+	cmp.w	(a0), d1
+	bne	.test_ng
+	lea	2(a0), a0
+	bra	.test_top
+
+	clr.w	d0
+.test_ng:
+	move.w	#$1000, d0  ; Red
+	move.w	#"NG", d1
+	lea	(ng_str).l, a2
+	bra	.print_result_top
+.test_ok:
+	move.w	#$2000, d0  ; Green
+	move.w	#"OK", d1
+	lea	(ok_str).l, a2
+.print_result_top:
+	move.b	(a2)+, d0
+	beq	.finish
+	move.w	d0, (a3)+
+	bra	.print_result_top
+
+.finish:
+	cmp.w	#"NG", d1
+	jmp (a1)
+
+; a0.l = base test address
+; a1.l = end address (not to be tested)
+; a2.l = region string
+; d0.w = test value
+; Z flag set if test is ok (bne after for success case)
+; Uses PrintVramAddr for messages
+memtest_region:
+	; Print label
+	move.w	d0, -(sp)
+	movem.l	a0-a1, -(sp)
+	move.l	a2, a0  ; Title string
+	move.l	PrintVramAddr, a1  ; VRAM address
+	clr.w	d0  ; Normal attr
+	jsr	print_str
+
+	; We are done with A2 so use it to store print addr
+	move.l	a1, a2
+
+	movem.l	(sp)+, a0-a1
+	move.w	(sp)+, d0
+
+.test_top:
+	cmpa.l	a0, a1
+	beq	.test_ok
+
+	move.w	d0, (a0)
+	cmp.w	(a0), d0
+	bne	.test_ng
+	lea	2(a0), a0
+	bra	.test_top
+
+	clr.w	d0
+.test_ng:
+	move.w	#$1000, d0  ; Red
+	move.w	#"NG", d1
+	move.l	a2, a1  ; Stored print address
+	lea	(ng_str).l, a0
+	bra	.print_result
+
+.test_ok:
+	move.w	#$2000, d0  ; Green
+	move.w	#"OK", d1
+	move.l	a2, a1  ; Stored print address
+	lea	(ok_str).l, a0
+
+.print_result:
+	jsr	print_str
+
+.finish:
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+	cmp.w	#"NG", d1
+	rts
+
+LAST_ROM	:=	*
