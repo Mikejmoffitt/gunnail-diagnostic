@@ -1,0 +1,74 @@
+; Treat all FIRE 1 presses as fresh edges for max autofire. This does not
+; increase the rate that bullets leave the ship, as that is gated to one
+; every six frames.
+	ORG	$007E52
+	bra	$7E70
+
+; Ditto purple
+	ORG	$8330
+	bra	$8342
+
+; Ditto red
+	ORG	$88A6
+	bra	$88B8
+
+	; 8896 for blue
+	; 8320 for red
+
+; Replacement input reader that removes duplicate code, adds autofire, and
+; map unused buttons to button 1 as well. This refactor was done to free up
+; a few bytes that were going to be used for an autofire routine, but
+; that ended up not being necessary.
+
+	ORG	$00C5EE
+switch_copy:
+	btst	#7, (GameSt).l
+	beq.w	$C688  ; demo
+	move.w	(LEVER_IN).l, d7
+	not.w	d7
+	movea.l	#P1Mvw, a6
+	bsr	switch_copy_sub
+	lsr.w	#8, d7
+	movea.l	#P2Mvw, a6
+	bsr	switch_copy_sub
+	rts
+
+
+; d7.b: input state.
+; PxMvw in a6.
+; Labels and comments taken from original source
+switch_copy_sub:
+	move.w	d7, -(sp)
+	tst.w	PlayerMv_DeadFlag(a6)  ; Now dead?
+	beq	.nclr2
+	clr.b	d6
+
+.nclr2:
+	tst.w	$58(a6)
+	beq	.nclr3
+	tst.w	6(a6)
+	bpl	.nclr3
+	move.b	#1, d7  ; kyousei right
+	btst	#1, (StgCtr+1).l
+	bne	.nclr3
+	move.b	#2, d7  ; kyousei left
+
+.nclr3:
+	cmpi.w	#StWait-30, $2C(a6)
+	bcs	.ok_1
+	andi.w	#$0F, d7  ; lever only
+.ok_1:
+	btst	#6, d7  ; button 3, probably
+	beq	.no_b3
+	bset	#4, d7  ; set button 1 if 3 is held
+.no_b3:
+	andi.w	#$3F, d7
+	move.w	d7, PlayerMv_SwitchData(a6)
+
+	move.w	(sp)+, d7
+	rts
+	dc.b	"FREE"
+
+	ORG	LAST_ROM
+
+LAST_ROM	:=	*

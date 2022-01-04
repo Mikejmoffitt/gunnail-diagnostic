@@ -99,28 +99,40 @@ new_status_write_str:
 	dc.b	"STATUS WRITE", 0
 
 magic_c7_wait_str:
-	dc.b	"MAGIC REPLY $C7 WAIT", 0
+	dc.b	"WAIT FOR REPLY ....... $C7", 0
 
 magic_00_wait_str:
-	dc.b	"MAGIC REPLY $00 WAIT", 0
+	dc.b	"WAIT FOR REPLY ....... $00", 0
 
 handshake_ok_str:
-	dc.b	"HANDSHAKE OK.", 0
+	dc.b	"HANDSHAKE OK", 0
 
 handshake_status_str:
-	dc.b	"HANDSHAKE STATUS ", 0
+	dc.b	"HANDSHAKE STATUS ..... $", 0
 
 send_str:
-	dc.b	"CMD SEND $", 0
+	dc.b	"$08001F COMMAND TX ... $", 0
 
 want_str:
-	dc.b	"REPLY WANT $", 0
+	dc.b	"$08000F EXPECT $", 0
 
 got_str:
-	dc.b	" GOT $", 0
+	dc.b	", RX $", 0
 
 received_str:
-	dc.b	"RECEIVED $", 0
+	dc.b	"$08000F RX ........... $", 0
+
+nmk004_init_complete_str:
+	dc.b	"NMK004 INIT COMPLETE", 0
+
+introduction_str:
+	dc.b	"**** GUNNAIL MIKE VER ****", 0
+
+all_systems_go_str:
+	dc.b	"     ALL SYSTEMS GO", 0
+
+push_wait_str:
+	dc.b	"hold button to read logs", 0
 	
 
 	.align	2

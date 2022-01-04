@@ -7,8 +7,10 @@ ROM_FREE = $02A100
 LAST_ROM	:=	ROM_FREE
 
 	INCLUDE		"src/memory_map.inc"
+	INCLUDE		"src/const.inc"
 	INCLUDE		"src/vars.inc"
 	INCLUDE		"src/func.inc"
+	INCLUDE		"src/input_improvement.a68"
 	INCLUDE		"src/strings.a68"
 	INCLUDE		"src/skip_checksum.a68"
 	INCLUDE		"src/util.a68"
@@ -48,7 +50,7 @@ new_reset_vector:
 	lea	(SC_CRAM).l, a0
 	lea	(.post_cram_clear).l, a1
 	move.w	#$0080, d0
-	clr.l	d1
+	move.w	#$AAAA, d1
 	jmp	mem_clear
 .post_cram_clear:
 
@@ -76,16 +78,26 @@ new_reset_vector:
 	; Write text palette
 	lea	SC_CRAM + $400, a0
 	lea	text_palettes, a1
-	move.w	#$002F, d1
+	move.w	#$004F, d1
 .pal_top:
 	move.w	(a1)+, (a0)+
 	dbf	d1, .pal_top
+
+; Print hello message
+	lea	V_RAM + $986, a3
+	lea	introduction_str, a0
+	lea	(.after_hello).l, a1
+	lea	V_RAM + $986, a2
+	move.w	#$3000, d0  ; Alt palette
+	jmp	print_str_no_wram
+.after_hello:
+
 
 ; Test WRAM with $AAAA value
 	lea	(WRAM).l, a0
 	lea	(.after_memtest_wram_aaaa).l, a1
 	lea	(label_wram_aaaa_str).l, a2
-	lea	V_RAM + $986, a3
+	lea	V_RAM + $906, a3
 	lea	(WRAM + $10000).l, a4
 	move.w	#$AAAA, d0
 	jmp	memtest_region_no_wram
@@ -100,7 +112,7 @@ new_reset_vector:
 	lea	(WRAM).l, a0
 	lea	(.after_memtest_wram_5555).l, a1
 	lea	(label_wram_5555_str).l, a2
-	lea	V_RAM + $946, a3
+	lea	V_RAM + $8C6, a3
 	lea	(WRAM + $10000).l, a4
 	move.w	#$5555, d0
 	jmp	memtest_region_no_wram
@@ -146,7 +158,7 @@ new_reset_vector:
 	lea	wram_addr_line_str_tbl, a0  ; String table
 	move.l	(a0, d2), a0  ; String for index d4
 	lea	(.after_addr_print).l, a1
-	lea	V_RAM + $906, a2
+	lea	V_RAM + $886, a2
 	clr.w	d0
 	jmp	print_str_no_wram
 .after_addr_print:
@@ -167,7 +179,7 @@ new_reset_vector:
 
 ; At this point, we have full confidence in WRAM, and the stack. Tests may
 ; continue assuming that these work.
-	move.l	#(V_RAM + $906), (PrintVramAddr).l
+	move.l	#(V_RAM + $886), (PrintVramAddr).l
 
 	lea	wram_size_ok_str, a0
 	move.l	PrintVramAddr, a1
@@ -219,14 +231,49 @@ new_reset_vector:
 
 	jsr	nmk004_init
 
+	lea	all_systems_go_str, a0
+	move.w	#$3000, d0
+	jsr	print_line
+
+	; Next line
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+
+	lea	push_wait_str, a0
+	move.w	#$2000, d0
+	jsr	print_line
+
+	; Wait for a bit so user can read messages.
+	move.w	#$02FF, d0
+.wait_outer:
+	move.w	#$00FF, d1
+.wait_inner:
+
+	move.w	LEVER_IN, d2
+	not	d2
+	andi.w	#$1F1F, d2
+	bne	.wait_skip
+
+	dbf	d1, .wait_inner
+	dbf	d0, .wait_outer
+
+.wait_skip:
+
+	; Wait until user has released all buttons.
+	move.w	LEVER_IN, d2
+	not	d2
+	andi.w	#$1F1F, d2
+	bne	.wait_skip
+
 	jmp	original_entry
 
 text_palettes:
 	; White
 	dc.w	$0000, $FFFF, $FFFF, $FFFF
 	dc.w	$FFFF, $FFFF, $FFFF, $FFFF
-	dc.w	$FFFF, $FFFF, $FFFF, $FFFF
-	dc.w	$FFFF, $FFFF, $FFFF, $FFFF
+	dc.w	$EEfF, $DDeF, $CCdF, $BBcF
+	dc.w	$AAbF, $99aF, $889F, $778F
 	; Red
 	dc.w	$0000, $F000, $F000, $F000
 	dc.w	$F000, $F000, $F000, $F000
@@ -237,6 +284,16 @@ text_palettes:
 	dc.w	$0F00, $0F00, $0F00, $0F00
 	dc.w	$0F00, $0F00, $0F00, $0F00
 	dc.w	$0F00, $0F00, $0F00, $0F00
+	; Blue
+	dc.w	$3300, $00F0, $01F0, $02F0
+	dc.w	$03F0, $04F0, $05F0, $06F0
+	dc.w	$07F0, $08F0, $09F0, $0AF0
+	dc.w	$0BF0, $0CF0, $0DF0, $0EF0
+	; Yellow
+	dc.w	$0080, $0F00, $1F00, $2F00
+	dc.w	$3F00, $4F00, $5F00, $6F00
+	dc.w	$7F00, $8F00, $9F00, $AF00
+	dc.w	$BF00, $CF00, $DF00, $EF00
 
 
 LAST_ROM	:=	*
