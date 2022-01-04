@@ -1,29 +1,11 @@
-; Treat all FIRE 1 presses as fresh edges for max autofire. This does not
-; increase the rate that bullets leave the ship, as that is gated to one
-; every six frames.
-	ORG	$007E52
-	bra	$7E70
-
-; Ditto purple
-	ORG	$8330
-	bra	$8342
-
-; Ditto red
-	ORG	$88A6
-	bra	$88B8
-
-	; 8896 for blue
-	; 8320 for red
-
-; Replacement input reader that removes duplicate code, adds autofire, and
-; map unused buttons to button 1 as well. This refactor was done to free up
-; a few bytes that were going to be used for an autofire routine, but
-; that ended up not being necessary.
-
+; Replacement input reader that removes duplicate code and maps button 3 to
+; button 1. This refactor was done to free up a few bytes that were going to
+; be used for an autofire routine, but that ended up not being necessary.
 	ORG	$00C5EE
+
 switch_copy:
 	btst	#7, (GameSt).l
-	beq.w	$C688  ; demo
+	beq.w	.run_demo
 	move.w	(LEVER_IN).l, d7
 	not.w	d7
 	movea.l	#P1Mvw, a6
@@ -33,6 +15,10 @@ switch_copy:
 	bsr	switch_copy_sub
 	rts
 
+.run_demo:
+	movea.l	#P1Mvw, a6
+	movea.l	#P2Mvw, a5
+	bra	$C688
 
 ; d7.b: input state.
 ; PxMvw in a6.
@@ -67,8 +53,3 @@ switch_copy_sub:
 
 	move.w	(sp)+, d7
 	rts
-	dc.b	"FREE"
-
-	ORG	LAST_ROM
-
-LAST_ROM	:=	*

@@ -1,0 +1,13 @@
+; Treat all FIRE 1 presses as fresh edges for max autofire. This does not
+; increase the rate that bullets leave the ship, as that is gated to one
+; every six frames.
+	ORG	$007E52
+	bra	$7E70
+
+; Ditto purple
+	ORG	$8330
+	bra	$8342
+
+; Ditto red
+	ORG	$88A6
+	bra	$88B8
