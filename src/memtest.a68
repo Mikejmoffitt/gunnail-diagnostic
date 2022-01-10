@@ -108,4 +108,67 @@ memtest_region:
 	cmp.w	#"NG", d1
 	rts
 
+; a0.l = base test address
+memtest_64k_size_check:
+	; d0 used to hold uniqe value to read/write from RAM
+	clr.l	d1
+	move.w	#$0002, d1  ; Offset for address line A1
+	move.w	#$0000, d2  ; Address line, starting at A1
+
+.size_test_top:
+	; A1 holds WRAM address with single address bit set
+	move.l	a0, a1
+	add.l	d1, a1
+
+	; Write unique value to base
+	move.w	d1, d0
+	eori.w	#$AAAA, d0
+	move.w	d0, (a0)
+
+	; Write another unique value to offset in memory
+	eori.w	#$FFFF, d0
+	move.w	d0, (a1)
+
+	; Check that offset write didn't affect base
+	move.w	(a0), d3
+	cmp.w	d0, d3
+	bne	.next_line
+
+.line_error:
+	; The line caused the address to alias; print error.
+	lea	addr_line_str_tbl, a0  ; String table
+	move.l	(a0, d2), a0  ; String for index d4
+
+	lea	PrintVramAddr, a1
+	clr.w	d0
+	jsr	print_str
+
+	lea	ng_str, a0
+	move.w	#$1000, d0
+	jmp	print_str
+
+.forever:
+	bra	.forever
+
+.next_line:
+	lsl.w	#1, d1  ; Move to next address line
+	addi.w	#1, d2  ; Increment test index for sake of error printing
+	cmp.w	#$0F, d2
+	bne	.size_test_top
+
+; Print result
+	lea	wram_size_ok_str, a0
+	move.l	PrintVramAddr, a1
+	move.w	#$0000, d0
+	jsr	print_str
+
+	lea	ok_str, a0
+	move.w	#$2000, d0
+	jsr	print_str
+	move.l	PrintVramAddr, d0
+	sub.w	#$0040, d0
+	move.l	d0, PrintVramAddr
+	rts
+
+
 LAST_ROM	:=	*

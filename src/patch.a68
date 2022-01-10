@@ -156,7 +156,7 @@ new_reset_vector:
 	bne	.next_line
 
 	; The line caused the address to alias; print error.
-	lea	wram_addr_line_str_tbl, a0  ; String table
+	lea	addr_line_str_tbl, a0  ; String table
 	move.l	(a0, d2), a0  ; String for index d4
 	lea	(.after_addr_print).l, a1
 	lea	V_RAM + $886, a2
@@ -206,6 +206,9 @@ new_reset_vector:
 	move.w	#$AAAA, d0
 	jsr	memtest_region
 
+	lea	(SCL_RAM).l, a0
+	jsr	memtest_64k_size_check
+
 ; Test SC_CRAM
 	lea	(SC_CRAM).l, a0
 	lea	(SC_CRAM + $0400).l, a1
@@ -217,6 +220,9 @@ new_reset_vector:
 	lea	sc_cram_aaaa_str, a2
 	move.w	#$AAAA, d0
 	jsr	memtest_region
+
+	lea	(SC_CRAM).l, a0
+	jsr	memtest_64k_size_check
 
 ; Test VR_CRAM
 	lea	(VR_CRAM).l, a0

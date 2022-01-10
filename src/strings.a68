@@ -20,53 +20,53 @@ wram_size_ok_str:
 	dc.b	"WRAM A1 - A16 LINES ", 0
 	.align	2
 
-wram_a15_bad_str:
-	dc.b	"WRAM A15 LINE ", 0
-wram_a14_bad_str:
-	dc.b	"WRAM A14 LINE ", 0
-wram_a13_bad_str:
-	dc.b	"WRAM A13 LINE ", 0
-wram_a12_bad_str:
-	dc.b	"WRAM A12 LINE ", 0
-wram_a11_bad_str:
-	dc.b	"WRAM A11 LINE ", 0
-wram_a10_bad_str:
-	dc.b	"WRAM A10 LINE ", 0
-wram_a9_bad_str:
-	dc.b	"WRAM A9 LINE ", 0
-wram_a8_bad_str:
-	dc.b	"WRAM A8 LINE ", 0
-wram_a7_bad_str:
-	dc.b	"WRAM A7 LINE ", 0
-wram_a6_bad_str:
-	dc.b	"WRAM A6 LINE ", 0
-wram_a5_bad_str:
-	dc.b	"WRAM A5 LINE ", 0
-wram_a4_bad_str:
-	dc.b	"WRAM A4 LINE ", 0
-wram_a3_bad_str:
-	dc.b	"WRAM A3 LINE ", 0
-wram_a2_bad_str:
-	dc.b	"WRAM A2 LINE ", 0
-wram_a1_bad_str:
-	dc.b	"WRAM A1 LINE ", 0
+a15_bad_str:
+	dc.b	"A15 LINE ", 0
+a14_bad_str:
+	dc.b	"A14 LINE ", 0
+a13_bad_str:
+	dc.b	"A13 LINE ", 0
+a12_bad_str:
+	dc.b	"A12 LINE ", 0
+a11_bad_str:
+	dc.b	"A11 LINE ", 0
+a10_bad_str:
+	dc.b	"A10 LINE ", 0
+a9_bad_str:
+	dc.b	"A9 LINE ", 0
+a8_bad_str:
+	dc.b	"A8 LINE ", 0
+a7_bad_str:
+	dc.b	"A7 LINE ", 0
+a6_bad_str:
+	dc.b	"A6 LINE ", 0
+a5_bad_str:
+	dc.b	"A5 LINE ", 0
+a4_bad_str:
+	dc.b	"A4 LINE ", 0
+a3_bad_str:
+	dc.b	"A3 LINE ", 0
+a2_bad_str:
+	dc.b	"A2 LINE ", 0
+a1_bad_str:
+	dc.b	"A1 LINE ", 0
 
-wram_addr_line_str_tbl:
-	dc.l	wram_a1_bad_str
-	dc.l	wram_a2_bad_str
-	dc.l	wram_a3_bad_str
-	dc.l	wram_a4_bad_str
-	dc.l	wram_a5_bad_str
-	dc.l	wram_a6_bad_str
-	dc.l	wram_a7_bad_str
-	dc.l	wram_a8_bad_str
-	dc.l	wram_a9_bad_str
-	dc.l	wram_a10_bad_str
-	dc.l	wram_a11_bad_str
-	dc.l	wram_a12_bad_str
-	dc.l	wram_a13_bad_str
-	dc.l	wram_a14_bad_str
-	dc.l	wram_a15_bad_str
+addr_line_str_tbl:
+	dc.l	a1_bad_str
+	dc.l	a2_bad_str
+	dc.l	a3_bad_str
+	dc.l	a4_bad_str
+	dc.l	a5_bad_str
+	dc.l	a6_bad_str
+	dc.l	a7_bad_str
+	dc.l	a8_bad_str
+	dc.l	a9_bad_str
+	dc.l	a10_bad_str
+	dc.l	a11_bad_str
+	dc.l	a12_bad_str
+	dc.l	a13_bad_str
+	dc.l	a14_bad_str
+	dc.l	a15_bad_str
 
 scl_ram_5555_str:
 	dc.b	"$090000 SCL_RAM $5555: ", 0
